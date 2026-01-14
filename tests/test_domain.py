@@ -1,6 +1,7 @@
 from pytest import fixture, raises
 from datetime import datetime, timedelta
-from domain.models import Inbox, Message, generate_tripcode_signature
+from domain.models import Inbox, Message, generate_tripcode_signature, User
+
 
 @fixture
 def now() -> datetime:
@@ -29,7 +30,6 @@ def message(now: datetime, stranger_signature: str) -> Message:
 @fixture
 def active_inbox_anonymous(owner_signature: str, now: datetime) -> Inbox:
     return Inbox.create(
-        id="test-id",
         topic="Test topic",
         owner_signature=owner_signature,
         expires_in_hours=2,
@@ -41,7 +41,6 @@ def active_inbox_anonymous(owner_signature: str, now: datetime) -> Inbox:
 @fixture
 def active_inbox_signed(owner_signature: str, now: datetime) -> Inbox:
     return Inbox.create(
-        id="test-id",
         topic="Test topic",
         owner_signature=owner_signature,
         expires_in_hours=2,
@@ -70,8 +69,9 @@ def test_tripcode_separator():
 
 
 """Message tests"""
-def test_message_create_signature_from_username_and_secret():
-    message = Message.from_username_and_secret("test message", "u", "s")
+def test_message_create_signature_from_user():
+    user = User("u", "s")
+    message = Message.from_user("test message", user)
     tripcode = generate_tripcode_signature("u", "s")
     assert message.signature == tripcode
 
@@ -80,7 +80,6 @@ def test_message_create_signature_from_username_and_secret():
 def test_inbox_create_sets_expiry_correctly(owner_signature: str):
     now = datetime(2025, 1, 1, 12, 0)
     inbox = Inbox.create(
-        id="1",
         topic="t",
         owner_signature=owner_signature,
         expires_in_hours=2,

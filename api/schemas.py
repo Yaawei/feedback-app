@@ -26,11 +26,13 @@ class InboxCreate(BaseModel):
 
 class InboxUpdate(BaseModel):
     topic: str
+    username: str | None
+    secret: str | None
 
 
 class InboxAccess(BaseModel):
-    username: str
-    secret: str
+    username: str | None
+    secret: str | None
 
 
 class InboxPublicRead(BaseModel):

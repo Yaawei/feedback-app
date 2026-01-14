@@ -10,13 +10,6 @@ class InboxRepository:
     def __init__(self, db: Session):
         self.db = db
 
-    def generate_id(self, length: int = 10) -> str:
-        while True:
-            new_id = secrets.token_urlsafe(length)
-            exists = self.db.query(InboxORM).filter_by(id=new_id).first()
-            if not exists:
-                return new_id
-
     def save_new(self, inbox: Inbox):
         """Save a brand-new inbox. Fail if ID exists."""
         exists = self.db.query(InboxORM).filter_by(id=inbox.id).first()
@@ -58,6 +51,15 @@ class InboxRepository:
             )
             for m in inbox.messages
         ]
+        self.db.commit()
+
+    def add_message(self, inbox: Inbox, message: Message):
+        inbox_orm = self.db.query(InboxORM).filter_by(id=inbox.id).first()
+        if not inbox_orm:
+            raise ValueError(f"Inbox with id {inbox.id} does not exist")
+        inbox_orm.replies.append(MessageORM(
+            body=message.body, timestamp=message.timestamp, signature=message.signature
+        ))
         self.db.commit()
 
     def list_all(self) -> list[Inbox]:

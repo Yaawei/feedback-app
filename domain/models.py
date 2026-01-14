@@ -1,4 +1,5 @@
 import hashlib
+import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timedelta
 
@@ -10,14 +11,31 @@ def generate_tripcode_signature(username: str, secret: str, separator: str = "#"
 
 
 @dataclass
+class User:
+    username: str | None
+    secret: str | None
+    signature: str | None = field(init=False)
+
+    def __post_init__(self):
+        if self.username and self.secret:
+            self.signature = generate_tripcode_signature(self.username, self.secret)
+        else:
+            self.signature = None
+
+
+    def is_anonymous(self) -> bool:
+        return self.signature is not None
+
+
+@dataclass
 class Message:
     body: str
     timestamp: datetime = field(default_factory=datetime.now)
     signature: str | None = None
 
     @classmethod
-    def from_username_and_secret(cls, body: str, username: str, secret: str) -> Message:
-        return cls(body=body, timestamp=datetime.now(), signature=generate_tripcode_signature(username, secret))
+    def from_user(cls, body: str, user: User) -> Message:
+        return cls(body=body, timestamp=datetime.now(), signature=user.signature)
 
 
 @dataclass
@@ -32,13 +50,13 @@ class Inbox:
     @classmethod
     def create(
             cls,
-            id: str,
             topic: str,
             owner_signature: str,
             expires_in_hours: int,
             requires_signature: bool,
             now: datetime | None = None,
     ):
+        id = str(uuid.uuid4())
         now = now or datetime.now()
         expires_at = now + timedelta(hours=expires_in_hours)
         return cls(
