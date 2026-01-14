@@ -1,4 +1,3 @@
-from datetime import datetime, timedelta
 from typing import Generator
 
 from fastapi import APIRouter, Depends, HTTPException, Header
@@ -34,7 +33,8 @@ def get_inbox_credentials(
 
 @router.get("/inboxes/{inbox_id}")
 def read_inbox(
-        inbox_id: str, auth: schemas.InboxAccess | None,
+        inbox_id: str,
+        auth: schemas.InboxAccess | None, # todo check if this works
         repository: InboxRepository = Depends(get_inbox_repository)
 ) -> schemas.InboxOwnerRead | schemas.InboxPublicRead:
     inbox = repository.get_by_id(inbox_id)
@@ -54,17 +54,19 @@ def create_inbox(
         repository: InboxRepository = Depends(get_inbox_repository)
 ) -> schemas.InboxOwnerRead:
     owner_tripcode = generate_tripcode_signature(data.username, data.secret)
-    expiry = datetime.now() + timedelta(hours=data.expires_in_hours)
-    new_inbox = Inbox(
+    new_inbox = Inbox.create(
         id=repository.generate_id(),
         topic=data.topic,
         owner_signature=owner_tripcode,
-        expires_at=expiry,
-        requires_signature=data.requires_signature
+        requires_signature=data.requires_signature,
+        expires_in_hours=data.expires_in_hours
     )
     repository.save(new_inbox)
     return schemas.InboxOwnerRead.from_domain(new_inbox.view_for(owner_tripcode))
 
+# todo edit inbox with PATCH
+
+# todo endpoint to retrieve all inboxes with optional filtering by signature
 
 @router.post("/inboxes/{inbox_id}/messages", response_model=schemas.MessageRead)
 def create_message(

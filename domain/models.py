@@ -1,6 +1,6 @@
 import hashlib
 from dataclasses import dataclass, field
-from datetime import datetime
+from datetime import datetime, timedelta
 
 
 def generate_tripcode_signature(username: str, secret: str, separator: str = "#") -> str:
@@ -29,6 +29,26 @@ class Inbox:
     expires_at: datetime
     replies: list[Message] = field(default_factory=list)
 
+    @classmethod
+    def create(
+            cls,
+            id: str,
+            topic: str,
+            owner_signature: str,
+            expires_in_hours: int,
+            requires_signature: bool,
+            now: datetime | None = None,
+    ):
+        now = now or datetime.now()
+        expires_at = now + timedelta(hours=expires_in_hours)
+        return cls(
+            id=id,
+            topic=topic,
+            owner_signature=owner_signature,
+            expires_at=expires_at,
+            requires_signature=requires_signature,
+        )
+
     def is_expired(self) -> bool:
         return datetime.now() > self.expires_at
 
@@ -39,6 +59,7 @@ class Inbox:
         return self.is_owner(provided_signature) and len(self.replies) == 0
 
     def add_reply(self, message: Message) -> None:
+        # todo custom domain exceptions
         if self.is_expired():
             raise ValueError("Inbox is expired")
 
