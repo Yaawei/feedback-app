@@ -53,19 +53,17 @@ def test_save_duplicate_id_raises_error(repo, sample_inbox):
         repo.save_new(sample_inbox)
 
 
-def test_update_inbox_topic_and_messages(repo, sample_inbox):
+def test_update_inbox_topic(repo, sample_inbox):
     repo.save_new(sample_inbox)
 
     # Modify domain object
-    sample_inbox.topic = "Updated Topic"
-    sample_inbox.add_message(Message(body="New Reply", signature="anon"))
-
-    repo.update(sample_inbox)
+    new_topic = "Updated Topic"
+    sample_inbox.topic = new_topic
+    repo.edit_topic(sample_inbox, new_topic)
 
     updated = repo.get_by_id(sample_inbox.id)
-    assert updated.topic == "Updated Topic"
-    assert len(updated.messages) == 1
-    assert updated.messages[0].body == "New Reply"
+    assert updated.topic == new_topic
+
 
 
 def test_list_by_owner(repo):

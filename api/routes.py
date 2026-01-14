@@ -26,7 +26,7 @@ def get_inbox_repository(db: Session = Depends(get_db)) -> SQLAlchemyInboxReposi
 def get_inbox_credentials(
         x_username: str | None = Header(None),
         x_secret: str | None = Header(None)
-) -> schemas.InboxAccess | None:
+) -> schemas.InboxAccess:
     return schemas.InboxAccess(username=x_username, secret=x_secret)
 
 

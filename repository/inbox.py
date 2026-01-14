@@ -11,7 +11,7 @@ class InboxRepository(ABC):
         pass
 
     @abstractmethod
-    def update(self, inbox: Inbox) -> None:
+    def edit_topic(self, inbox: Inbox, topic: str) -> None:
         pass
 
     @abstractmethod
@@ -59,23 +59,13 @@ class SQLAlchemyInboxRepository(InboxRepository):
         self.db.add(inbox_orm)
         self.db.commit()
 
-    def update(self, inbox: Inbox):
+    def edit_topic(self, inbox: Inbox, topic: str):
         """Update an existing inbox. Must already exist."""
         inbox_orm = self.db.query(InboxORM).filter_by(id=inbox.id).first()
         if not inbox_orm:
             raise ValueError(f"Inbox with id {inbox.id} does not exist")
 
-        inbox_orm.topic = inbox.topic
-        inbox_orm.expires_at = inbox.expires_at
-        inbox_orm.requires_signature = inbox.requires_signature
-        inbox_orm.replies = [
-            MessageORM(
-                body=m.body,
-                timestamp=m.timestamp,
-                signature=m.signature
-            )
-            for m in inbox.messages
-        ]
+        inbox_orm.topic = topic
         self.db.commit()
 
     def add_message(self, inbox: Inbox, message: Message):

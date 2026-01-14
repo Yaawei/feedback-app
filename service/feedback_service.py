@@ -19,7 +19,8 @@ class FeedbackService:
     def __init__(self, repository: SQLAlchemyInboxRepository):
         self.repository = repository
 
-    def get_user_from_username_and_secret(self, username, secret) -> User:
+    @staticmethod
+    def get_user_from_username_and_secret(username, secret) -> User:
         return User(username, secret)
 
     def read_inbox(self, inbox_id: str, user: User) -> InboxView:
@@ -56,7 +57,7 @@ class FeedbackService:
         except ValueError as e:
             raise InboxNotEditableException(str(e))
 
-        self.repository.update(inbox)
+        self.repository.edit_topic(inbox, topic)
         return inbox.view_for(user)
 
     def add_inbox_message(self, inbox_id: str, message: str, user: User) -> Message:
