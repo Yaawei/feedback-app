@@ -24,7 +24,7 @@ class User:
 
 
     def is_anonymous(self) -> bool:
-        return self.signature is not None
+        return self.signature is None
 
 
 @dataclass
