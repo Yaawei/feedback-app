@@ -1,12 +1,37 @@
-import secrets
+from abc import ABC, abstractmethod
 
 from sqlalchemy.orm import Session
 
 from domain.models import Inbox, Message
 from repository.database import InboxORM, MessageORM
 
+class InboxRepository(ABC):
+    @abstractmethod
+    def save_new(self, inbox: Inbox) -> None:
+        pass
 
-class InboxRepository:
+    @abstractmethod
+    def update(self, inbox: Inbox) -> None:
+        pass
+
+    @abstractmethod
+    def add_message(self, inbox: Inbox, message: Message) -> None:
+        pass
+
+    @abstractmethod
+    def list_all(self) -> None:
+        pass
+
+    @abstractmethod
+    def list_by_owner(self, owner_signature: Inbox) -> None:
+        pass
+
+    @abstractmethod
+    def get_by_id(self, id: str) -> Inbox | None:
+        pass
+
+
+class SQLAlchemyInboxRepository(InboxRepository):
     def __init__(self, db: Session):
         self.db = db
 

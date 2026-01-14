@@ -2,7 +2,7 @@ from pytest import fixture, raises
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from repository.database import Base
-from repository.inbox import InboxRepository
+from repository.inbox import SQLAlchemyInboxRepository
 from domain.models import Inbox, Message
 
 
@@ -21,7 +21,7 @@ def db_session():
 
 @fixture
 def repo(db_session):
-    return InboxRepository(db_session)
+    return SQLAlchemyInboxRepository(db_session)
 
 
 @fixture

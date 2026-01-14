@@ -4,8 +4,7 @@ from fastapi import APIRouter, Depends, HTTPException, Header
 from sqlalchemy.orm import Session
 
 from repository.database import SessionLocal
-from repository.inbox import InboxRepository
-from domain.models import Inbox, generate_tripcode_signature, Message
+from repository.inbox import SQLAlchemyInboxRepository
 from api import schemas
 from service.feedback_service import FeedbackService, InboxNotFoundException, InboxNotEditableException, \
     CannotAddMessageException
@@ -20,8 +19,8 @@ def get_db() -> Generator[Session]:
         db.close()
 
 
-def get_inbox_repository(db: Session = Depends(get_db)) -> InboxRepository:
-    return InboxRepository(db)
+def get_inbox_repository(db: Session = Depends(get_db)) -> SQLAlchemyInboxRepository:
+    return SQLAlchemyInboxRepository(db)
 
 
 def get_inbox_credentials(
@@ -31,7 +30,7 @@ def get_inbox_credentials(
     return schemas.InboxAccess(username=x_username, secret=x_secret)
 
 
-def get_feedback_service(repository: InboxRepository = Depends(get_inbox_repository)) -> FeedbackService:
+def get_feedback_service(repository: SQLAlchemyInboxRepository = Depends(get_inbox_repository)) -> FeedbackService:
     return FeedbackService(repository)
 
 
