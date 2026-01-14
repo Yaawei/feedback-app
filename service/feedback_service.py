@@ -14,6 +14,7 @@ class CannotAddMessageException(Exception):
     pass
 
 
+
 class FeedbackService:
     def __init__(self, repository: SQLAlchemyInboxRepository):
         self.repository = repository
@@ -26,7 +27,7 @@ class FeedbackService:
         if not inbox:
             raise InboxNotFoundException("Inbox not found")
 
-        return inbox.view_for(user.signature)
+        return inbox.view_for(user)
 
     def list_inboxes(self, user: User) -> list[InboxView]:
         if user.signature is None:
@@ -34,7 +35,7 @@ class FeedbackService:
         else:
             inboxes = self.repository.list_by_owner(user.signature)
 
-        return [inbox.view_for(user.signature) for inbox in inboxes]
+        return [inbox.view_for(user) for inbox in inboxes]
 
     def create_inbox(self, topic: str, user: User, requires_signature: bool, expires_in_hours: int) -> InboxView:
         inbox = Inbox.create(
@@ -44,23 +45,19 @@ class FeedbackService:
             expires_in_hours=expires_in_hours
         )
         self.repository.save_new(inbox)
-        return inbox.view_for(user.signature)
+        return inbox.view_for(user)
 
     def update_inbox_topic(self, topic: str, user: User) -> InboxView:
         inbox = self.repository.get_by_id(topic)
         if not inbox:
             raise InboxNotFoundException("Inbox not found")
-
-        if user.is_anonymous():
-            raise InboxNotEditableException("Anonymous user cannot update inbox")
-
         try:
-            inbox.edit_topic(topic, user.signature)
+            inbox.edit_topic(topic, user)
         except ValueError as e:
             raise InboxNotEditableException(str(e))
 
         self.repository.update(inbox)
-        return inbox.view_for(user.signature)
+        return inbox.view_for(user)
 
     def add_inbox_message(self, inbox_id: str, message: str, user: User) -> Message:
         inbox = self.repository.get_by_id(inbox_id)

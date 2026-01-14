@@ -19,6 +19,21 @@ def stranger_signature() -> str:
 
 
 @fixture
+def owner() -> User:
+    return User("u", "s")
+
+
+@fixture
+def stranger() -> User:
+    return User("u", "z")
+
+
+@fixture
+def anonymous_user() -> User:
+    return User(None, None)
+
+
+@fixture
 def message(now: datetime, stranger_signature: str) -> Message:
     return Message(
         body="test message",
@@ -89,10 +104,10 @@ def test_inbox_create_sets_expiry_correctly(owner_signature: str):
     assert inbox.expires_at == now + timedelta(hours=2)
 
 
-def test_inbox_is_owner(active_inbox_anonymous: Inbox, owner_signature: str, stranger_signature: str):
-    assert active_inbox_anonymous.is_owner(owner_signature) is True
-    assert active_inbox_anonymous.is_owner(stranger_signature) is False
-    assert active_inbox_anonymous.is_owner(None) is False
+def test_inbox_is_owner(active_inbox_anonymous: Inbox, owner: User, stranger: User, anonymous_user: User):
+    assert active_inbox_anonymous.is_owner(owner) is True
+    assert active_inbox_anonymous.is_owner(stranger) is False
+    assert active_inbox_anonymous.is_owner(anonymous_user) is False
 
 
 def test_inbox_is_expired(active_inbox_anonymous: Inbox, now: datetime):
@@ -121,37 +136,37 @@ def test_inbox_signed_rejects_without_signature(active_inbox_signed: Inbox, now:
         active_inbox_signed.add_message(message)
 
 
-def test_inbox_edit_topic_success(active_inbox_anonymous: Inbox, owner_signature: str):
+def test_inbox_edit_topic_success(active_inbox_anonymous: Inbox, owner: User):
     new_topic = "New Test Topic"
-    active_inbox_anonymous.edit_topic(new_topic, owner_signature)
+    active_inbox_anonymous.edit_topic(new_topic, owner)
     assert active_inbox_anonymous.topic == new_topic
 
 
-def test_inbox_edit_topic_failure_wrong_signature(active_inbox_anonymous: Inbox, stranger_signature: str):
+def test_inbox_edit_topic_failure_wrong_signature(active_inbox_anonymous: Inbox, stranger: User):
     with raises(ValueError, match="Inbox topic edit not allowed"):
-        active_inbox_anonymous.edit_topic("New Topic", stranger_signature)
+        active_inbox_anonymous.edit_topic("New Topic", stranger)
 
 
 def test_inbox_edit_topic_failure_if_messages_inside(
         active_inbox_anonymous: Inbox,
-        owner_signature: str,
+        owner: User,
         message: Message
 ):
     active_inbox_anonymous.add_message(message)
     with raises(ValueError, match="Inbox topic edit not allowed"):
-        active_inbox_anonymous.edit_topic("New Topic", owner_signature)
+        active_inbox_anonymous.edit_topic("New Topic", owner)
 
 
 def test_inbox_view_for_privacy_logic(
         active_inbox_anonymous: Inbox,
-        owner_signature: str,
-        stranger_signature: str,
+        owner: User,
+        stranger: User,
         message: Message
 ):
     active_inbox_anonymous.add_message(message)
-    owner_view = active_inbox_anonymous.view_for(owner_signature)
+    owner_view = active_inbox_anonymous.view_for(owner)
     assert owner_view.messages is not None
     assert len(owner_view.messages) == 1
 
-    public_view = active_inbox_anonymous.view_for(stranger_signature)
+    public_view = active_inbox_anonymous.view_for(stranger)
     assert public_view.messages is None

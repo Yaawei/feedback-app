@@ -14,13 +14,11 @@ def generate_tripcode_signature(username: str, secret: str, separator: str = "#"
 class User:
     username: str | None
     secret: str | None
-    signature: str | None = field(init=False)
+    signature: str | None = None
 
     def __post_init__(self):
-        if self.username and self.secret:
+        if self.signature is None and self.username and self.secret:
             self.signature = generate_tripcode_signature(self.username, self.secret)
-        else:
-            self.signature = None
 
 
     def is_anonymous(self) -> bool:
@@ -70,11 +68,11 @@ class Inbox:
     def is_expired(self) -> bool:
         return datetime.now() > self.expires_at
 
-    def is_owner(self, provided_signature: str | None) -> bool:
-        return provided_signature is not None and self.owner_signature == provided_signature
+    def is_owner(self, user: User) -> bool:
+        return (not user.is_anonymous()) and self.owner_signature == user.signature
 
-    def can_edit_topic(self, provided_signature: str | None) -> bool:
-        return self.is_owner(provided_signature) and len(self.messages) == 0
+    def can_edit_topic(self, user: User) -> bool:
+        return self.is_owner(user) and len(self.messages) == 0
 
     def add_message(self, message: Message) -> None:
         # todo custom domain exceptions
@@ -86,14 +84,16 @@ class Inbox:
 
         self.messages.append(message)
 
-    def edit_topic(self, new_topic: str, provided_signature: str | None) -> None:
-        if not self.can_edit_topic(provided_signature):
+    def edit_topic(self, new_topic: str, user: User) -> None:
+        if user.is_anonymous():
+            raise ValueError("Anonymous reply not allowed")
+        if not self.can_edit_topic(user):
             raise ValueError("Inbox topic edit not allowed")
 
         self.topic = new_topic
 
-    def view_for(self, provided_signature: str | None) -> InboxView:
-        is_owner = self.is_owner(provided_signature)
+    def view_for(self, user: User) -> InboxView:
+        is_owner = self.is_owner(user)
         messages = self.messages if is_owner else None
         return InboxView(inbox=self, messages=messages)
 

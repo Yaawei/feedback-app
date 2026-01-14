@@ -87,8 +87,6 @@ def update_inbox(
         feedback_service: FeedbackService = Depends(get_feedback_service)
 ) -> schemas.InboxOwnerRead:
     user = feedback_service.get_user_from_username_and_secret(data.username, data.secret)
-    if user.is_anonymous():
-        raise HTTPException(status_code=401, detail="Authentication credentials were not provided")
     try:
         view = feedback_service.update_inbox_topic(inbox_id, user)
     except InboxNotFoundException:
