@@ -21,7 +21,11 @@ class InboxCreate(BaseModel):
     username: str
     secret: str
     expires_in_hours: int = 24
-    require_signature: bool = True
+    requires_signature: bool = True
+
+
+class InboxUpdate(BaseModel):
+    topic: str
 
 
 class InboxAccess(BaseModel):
@@ -33,7 +37,8 @@ class InboxPublicRead(BaseModel):
     id: str
     topic: str
     expires_at: datetime
-    require_signature: bool
+    requires_signature: bool
+    owner_signature: str
 
     @classmethod
     def from_domain(cls, inbox_view: InboxView) -> InboxPublicRead:
@@ -41,21 +46,26 @@ class InboxPublicRead(BaseModel):
             id=inbox_view.inbox.id,
             topic=inbox_view.inbox.topic,
             expires_at=inbox_view.inbox.expires_at,
-            require_signature=inbox_view.inbox.requires_signature
+            requires_signature=inbox_view.inbox.requires_signature,
+            owner_signature=inbox_view.inbox.owner_signature
         )
 
 
 class InboxOwnerRead(InboxPublicRead):
-    replies: list[MessageRead]
+    """Extends InboxPublicRead with replies to inbox."""
+    messages: list[MessageRead] | list[None]
 
     @classmethod
     def from_domain(cls, inbox_view: InboxView) -> InboxOwnerRead:
-        base = super().from_domain(inbox_view)
         return cls(
-            **base.model_dump(),
-            replies=[
+            id=inbox_view.inbox.id,
+            topic=inbox_view.inbox.topic,
+            expires_at=inbox_view.inbox.expires_at,
+            requires_signature=inbox_view.inbox.requires_signature,
+            owner_signature=inbox_view.inbox.owner_signature,
+            messages=[
                 MessageRead(
                     body=message.body, timestamp=message.timestamp, signature=message.signature
                 ) for message in inbox_view.messages
-            ]
+            ] if inbox_view.messages is not None else [None]
         )

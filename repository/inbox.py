@@ -17,36 +17,16 @@ class InboxRepository:
             if not exists:
                 return new_id
 
-    def save(self, inbox: Inbox):
-        inbox_orm = self.db.query(InboxORM).filter_by(id=inbox.id).first()
-        if not inbox_orm:
-            inbox_orm = InboxORM(id=inbox.id)
-            self.db.add(inbox)
-
-        inbox_orm.topic = inbox.topic
-        inbox_orm.expires_at = inbox.expires_at
-        inbox_orm.owner = inbox.owner_signature
-        inbox_orm.requires_signature = inbox.requires_signature
-
-        inbox_orm.replies = [
-            MessageORM(
-                body=msg.body,
-                timestamp=msg.timestamp,
-                signature=msg.signature
-            ) for msg in inbox.replies
-        ]
-        self.db.commit()
-
     def save_new(self, inbox: Inbox):
         """Save a brand-new inbox. Fail if ID exists."""
         exists = self.db.query(InboxORM).filter_by(id=inbox.id).first()
-        if exists:
-            raise InboxIdCollisionError(f"Inbox with id {inbox.id} already exists")
+        if exists: # todo custom exceptions
+            raise ValueError(f"Inbox with id {inbox.id} already exists")
 
         inbox_orm = InboxORM(
             id=inbox.id,
             topic=inbox.topic,
-            owner=inbox.owner_signature,
+            owner_signature=inbox.owner_signature,
             expires_at=inbox.expires_at,
             requires_signature=inbox.requires_signature,
             replies=[
@@ -55,7 +35,7 @@ class InboxRepository:
                     timestamp=m.timestamp,
                     signature=m.signature
                 )
-                for m in inbox.replies
+                for m in inbox.messages
             ]
         )
         self.db.add(inbox_orm)
@@ -76,20 +56,40 @@ class InboxRepository:
                 timestamp=m.timestamp,
                 signature=m.signature
             )
-            for m in inbox.replies
+            for m in inbox.messages
         ]
         self.db.commit()
 
+    def list_all(self) -> list[Inbox]:
+        orms: list[InboxORM] = self.db.query(InboxORM).all() # todo move to select for good typehints
+        return [self._inbox_to_domain(inbox_orm) for inbox_orm in orms]
+
+    def list_by_owner(self, owner_signature: str) -> list[Inbox]:
+        return [
+            self._inbox_to_domain(inbox_orm)
+            for inbox_orm in self.db.query(InboxORM).filter_by(owner_signature=owner_signature).all()
+        ]
+
     def get_by_id(self, inbox_id: str) -> Inbox | None:
-        inbox_orm = self.db.query(InboxORM).filter_by(id=inbox_id).first()
+        inbox_orm: InboxORM | None = self.db.query(InboxORM).filter_by(id=inbox_id).first()
         if not inbox_orm:
             return None
 
+        return self._inbox_to_domain(inbox_orm)
+
+    def _inbox_to_domain(self, orm: InboxORM) -> Inbox:
         return Inbox(
-            id=inbox_orm.id,
-            topic=inbox_orm.topic,
-            expires_at=inbox_orm.expires_at,
-            owner_signature=inbox_orm.owner_signature,
-            requires_signature=inbox_orm.requires_signature,
-            replies = [Message(body=msg.body, timestamp=msg.timestamp, signature=msg.signature) for msg in inbox_orm.replies]
+            id=orm.id,
+            topic=orm.topic,
+            owner_signature=orm.owner_signature,
+            expires_at=orm.expires_at,
+            requires_signature=orm.requires_signature,
+            messages=[self._msg_to_domain(m) for m in orm.replies],
+        )
+
+    def _msg_to_domain(self, orm_msg: MessageORM) -> Message:
+        return Message(
+            body=orm_msg.body,
+            timestamp=orm_msg.timestamp,
+            signature=orm_msg.signature,
         )

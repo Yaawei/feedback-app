@@ -34,7 +34,7 @@ def get_inbox_credentials(
 @router.get("/inboxes/{inbox_id}")
 def read_inbox(
         inbox_id: str,
-        auth: schemas.InboxAccess | None, # todo check if this works
+        auth: schemas.InboxAccess | None = Depends(get_inbox_credentials), # todo check if this works
         repository: InboxRepository = Depends(get_inbox_repository)
 ) -> schemas.InboxOwnerRead | schemas.InboxPublicRead:
     inbox = repository.get_by_id(inbox_id)
@@ -48,7 +48,23 @@ def read_inbox(
     return schemas.InboxPublicRead.from_domain(view)
 
 
-@router.post("/inboxes", response_model=schemas.InboxOwnerRead)
+@router.get("/inboxes")
+def list_inboxes(
+        auth: schemas.InboxAccess | None = Depends(get_inbox_credentials),
+        repository: InboxRepository = Depends(get_inbox_repository)
+) -> list[schemas.InboxOwnerRead] | list[schemas.InboxPublicRead]:
+    if auth:
+        owner_tripcode = generate_tripcode_signature(auth.username, auth.secret)
+        inboxes = repository.list_by_owner(owner_tripcode)
+        inbox_views = [inbox.view_for(owner_tripcode) for inbox in inboxes]
+        return [schemas.InboxOwnerRead.from_domain(view) for view in inbox_views]
+    else:
+        inboxes = repository.list_all()
+        inbox_views = [inbox.view_for(None) for inbox in inboxes]
+        return [schemas.InboxPublicRead.from_domain(view) for view in inbox_views]
+
+
+@router.post("/inboxes")
 def create_inbox(
         data: schemas.InboxCreate,
         repository: InboxRepository = Depends(get_inbox_repository)
@@ -61,12 +77,32 @@ def create_inbox(
         requires_signature=data.requires_signature,
         expires_in_hours=data.expires_in_hours
     )
-    repository.save(new_inbox)
+    repository.save_new(new_inbox)
     return schemas.InboxOwnerRead.from_domain(new_inbox.view_for(owner_tripcode))
 
-# todo edit inbox with PATCH
 
-# todo endpoint to retrieve all inboxes with optional filtering by signature
+@router.patch("/inboxes/{inbox_id}", response_model=schemas.InboxOwnerRead)
+def update_inbox(
+        inbox_id: str,
+        data: schemas.InboxUpdate,
+        auth: schemas.InboxAccess | None = Depends(get_inbox_credentials),
+        repository: InboxRepository = Depends(get_inbox_repository)
+) -> schemas.InboxOwnerRead:
+    if not auth:
+        raise HTTPException(status_code=401, detail="Authentication credentials were not provided")
+    inbox = repository.get_by_id(inbox_id)
+    if not inbox:
+        raise HTTPException(status_code=404, detail="Inbox not found")
+
+    owner_tripcode = generate_tripcode_signature(auth.username, auth.secret)
+    try:
+        inbox.edit_topic(data.topic, owner_tripcode)
+    except ValueError as e:
+        raise HTTPException(status_code=403, detail=str(e))
+
+    repository.update(inbox)
+    return schemas.InboxOwnerRead.from_domain(inbox.view_for(owner_tripcode))
+
 
 @router.post("/inboxes/{inbox_id}/messages", response_model=schemas.MessageRead)
 def create_message(
@@ -84,11 +120,10 @@ def create_message(
         message = Message(data.body)
 
     try:
-        inbox.add_reply(message)
+        inbox.add_message(message)
+        repository.update(inbox)
     except ValueError as e:
         raise HTTPException(status_code=400, detail=str(e))
-
-    repository.save(inbox)
     return schemas.MessageRead(
         body=message.body,
         timestamp=message.timestamp,

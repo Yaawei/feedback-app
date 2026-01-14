@@ -10,7 +10,7 @@ Base = declarative_base()
 class InboxORM(Base):
     __tablename__ = "inboxes"
 
-    id = Column(Integer, primary_key=True, index=True)
+    id = Column(String, primary_key=True, index=True)
     topic = Column(String)
     owner_signature = Column(String)
     expires_at = Column(DateTime)
