@@ -1,5 +1,5 @@
 from domain.models import User, InboxView, Inbox, Message
-from repository.inbox import SQLAlchemyInboxRepository, InboxRepository
+from repository.inbox import InboxRepository
 
 
 class InboxNotFoundException(Exception):
