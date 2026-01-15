@@ -16,7 +16,7 @@ class User:
     secret: str | None
     signature: str | None = None
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         if self.signature is None and self.username and self.secret:
             self.signature = generate_tripcode_signature(self.username, self.secret)
 
@@ -53,7 +53,7 @@ class Inbox:
             expires_in_hours: int,
             requires_signature: bool,
             now: datetime | None = None,
-    ):
+    ) -> Inbox:
         id = str(uuid.uuid4())
         now = now or datetime.now()
         expires_at = now + timedelta(hours=expires_in_hours)

@@ -16,7 +16,7 @@ class CannotAddMessageException(Exception):
 
 
 class FeedbackService:
-    def __init__(self, repository: InboxRepository):
+    def __init__(self, repository: InboxRepository) -> None:
         self.repository = repository
 
     @staticmethod

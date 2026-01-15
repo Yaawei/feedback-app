@@ -19,11 +19,11 @@ class InboxRepository(ABC):
         pass
 
     @abstractmethod
-    def list_all(self) -> None:
+    def list_all(self) -> list[Inbox]:
         pass
 
     @abstractmethod
-    def list_by_signature(self, owner_signature: str) -> None:
+    def list_by_signature(self, owner_signature: str) -> list[Inbox]:
         pass
 
     @abstractmethod
