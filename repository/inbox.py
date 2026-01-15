@@ -23,7 +23,7 @@ class InboxRepository(ABC):
         pass
 
     @abstractmethod
-    def list_by_owner(self, owner_signature: Inbox) -> None:
+    def list_by_signature(self, owner_signature: str) -> None:
         pass
 
     @abstractmethod
@@ -81,7 +81,7 @@ class SQLAlchemyInboxRepository(InboxRepository):
         orms: list[InboxORM] = self.db.query(InboxORM).all() # todo move to select for good typehints
         return [self._inbox_to_domain(inbox_orm) for inbox_orm in orms]
 
-    def list_by_owner(self, owner_signature: str) -> list[Inbox]:
+    def list_by_signature(self, owner_signature: str) -> list[Inbox]:
         return [
             self._inbox_to_domain(inbox_orm)
             for inbox_orm in self.db.query(InboxORM).filter_by(owner_signature=owner_signature).all()

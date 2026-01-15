@@ -73,7 +73,7 @@ def test_list_by_owner(repo):
     repo.save_new(inbox1)
     repo.save_new(inbox2)
 
-    results = repo.list_by_owner("owner#1")
+    results = repo.list_by_signature("owner#1")
     assert len(results) == 1
     assert results[0].id == inbox1.id
 

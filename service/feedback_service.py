@@ -1,5 +1,5 @@
 from domain.models import User, InboxView, Inbox, Message
-from repository.inbox import SQLAlchemyInboxRepository
+from repository.inbox import SQLAlchemyInboxRepository, InboxRepository
 
 
 class InboxNotFoundException(Exception):
@@ -16,7 +16,7 @@ class CannotAddMessageException(Exception):
 
 
 class FeedbackService:
-    def __init__(self, repository: SQLAlchemyInboxRepository):
+    def __init__(self, repository: InboxRepository):
         self.repository = repository
 
     @staticmethod
@@ -34,7 +34,7 @@ class FeedbackService:
         if user.signature is None:
             inboxes = self.repository.list_all()
         else:
-            inboxes = self.repository.list_by_owner(user.signature)
+            inboxes = self.repository.list_by_signature(user.signature)
 
         return [inbox.view_for(user) for inbox in inboxes]
 
