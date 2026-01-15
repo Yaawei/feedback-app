@@ -88,7 +88,7 @@ def update_inbox(
 ) -> schemas.InboxOwnerRead:
     user = feedback_service.get_user_from_username_and_secret(data.username, data.secret)
     try:
-        view = feedback_service.update_inbox_topic(inbox_id, user)
+        view = feedback_service.update_inbox_topic(inbox_id, data.topic, user)
     except InboxNotFoundException:
         raise HTTPException(status_code=404, detail="Inbox not found")
     except InboxNotEditableException:

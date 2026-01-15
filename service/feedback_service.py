@@ -48,8 +48,8 @@ class FeedbackService:
         self.repository.save_new(inbox)
         return inbox.view_for(user)
 
-    def update_inbox_topic(self, topic: str, user: User) -> InboxView:
-        inbox = self.repository.get_by_id(topic)
+    def update_inbox_topic(self, inbox_id: str, topic: str, user: User) -> InboxView:
+        inbox = self.repository.get_by_id(inbox_id)
         if not inbox:
             raise InboxNotFoundException("Inbox not found")
         try:
